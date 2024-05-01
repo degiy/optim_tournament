@@ -1,4 +1,5 @@
 #include "swap_table.h"
+#include "teams_on_slot.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,7 @@ static struct argp_option options[] = {
     {"runs", 'r', "NB", 0, "How many random draws of match orders we try to find the best initial score (default = 1000)"},
     {"nb-slots", 's', "NB", 0, "How many time slots we envision for the tournament"},
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
+    {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
     {"optim", 'z', 0, 0, "Run the swap optimizer on the tournament with the best initial score"},
     {"break", 'b', "N,X,Y", 0, "Each teams need a lunch break of N consecutive slots, between slot X and slot Y (syntax : N,X,Y). Will need optimizer."},
     {"out", 'o', "FILE", 0, "Output file (tournament result file from optimizer)"},
@@ -73,6 +75,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             break;
         case 'b':
             arguments->break_syntax = arg;
+            break;
+        case 't':
+            TeamsOnSlot::CapToNbTeams(atoi(arg));
             break;
         case ARGP_KEY_ARG:
             // arguments
@@ -142,6 +147,11 @@ int main(int argc, char *argv[])
     main_board->Run(arguments.nb_runs);
 
     main_table=new SwapTable(*main_board);
+    if (debug)
+    {
+        printf("Initial table :\n");
+        main_table->Debug();
+    }
     main_table->BestSwap(1);
 
     // Close the file

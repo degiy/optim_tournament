@@ -32,9 +32,16 @@ void TeamsOnSlot::AddMatch(TeamId a, TeamId b)
 
 void TeamsOnSlot::Debug()
 {
-    for(int i=0;i<MAX_TEAMS;i++)
+    for(int i=0;i<cap;i++)
     {
         int digit=i%10;
         if (test(i)) printf("%d",digit); else printf ("-");
     }
+}
+
+int TeamsOnSlot::cap=MAX_TEAMS;
+
+void TeamsOnSlot::CapToNbTeams(int nb)
+{
+    cap=nb;
 }
