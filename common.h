@@ -1,9 +1,15 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#define MAX_TEAMS 64
-#define MAX_SLOTS 32
-#define MAX_COURTS 8
+// on set for debug, on for max load
+
+#define MAX_TEAMS 16
+//#define MAX_TEAMS 64
+#define MAX_SLOTS 16
+//#define MAX_SLOTS 32
+#define MAX_COURTS 4
+//#define MAX_COURTS 8
+
 #define MAX_MATCHES (MAX_COURTS*MAX_SLOTS)
 
 extern short verbose,debug;

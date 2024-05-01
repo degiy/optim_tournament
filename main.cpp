@@ -1,3 +1,4 @@
+#include "swap_table.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +8,10 @@
 using namespace std;
 
 #include "board.h"
+#include "swap_table.h"
 
 Board *main_board=nullptr;
+SwapTable *main_table=nullptr;
 
 short verbose=0;
 short debug=0;
@@ -95,6 +98,8 @@ int main(int argc, char *argv[])
 
     /* Default values for all arguments */
     memset((void *)&arguments, 0, sizeof(arguments));
+    // except for a few
+    arguments.nb_runs=1000;
 
     /* Parse our arguments; every option seen by parse_opt will be reflected in arguments. */
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
@@ -135,6 +140,9 @@ int main(int argc, char *argv[])
         i++;
     }
     main_board->Run(arguments.nb_runs);
+
+    main_table=new SwapTable(*main_board);
+    main_table->BestSwap(1);
 
     // Close the file
     fclose(file);

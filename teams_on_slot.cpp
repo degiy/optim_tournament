@@ -5,6 +5,11 @@ TeamsOnSlot::TeamsOnSlot()
 {
 }
 
+TeamsOnSlot::TeamsOnSlot(TeamId a)
+{
+    set(a);
+}
+
 TeamsOnSlot::TeamsOnSlot(TeamId a, TeamId b)
 {
     set(a);
@@ -23,4 +28,13 @@ void TeamsOnSlot::AddMatch(TeamId a, TeamId b)
 {
     set(a);
     set(b);
+}
+
+void TeamsOnSlot::Debug()
+{
+    for(int i=0;i<MAX_TEAMS;i++)
+    {
+        int digit=i%10;
+        if (test(i)) printf("%d",digit); else printf ("-");
+    }
 }

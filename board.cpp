@@ -93,6 +93,7 @@ void Board::Run(int loops)
             Debug();
         }
     }
+    *this=best_board;
 }
 
 void Board::NthCell(short skip,MatchCell **prev,MatchCell **curr)

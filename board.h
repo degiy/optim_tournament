@@ -21,7 +21,7 @@ class Board
         Board(short nb_slots,short nb_matches);
         void SetNbCourts(short nb_courts); // to set all slots to the same number of availlable courts (capacity)
         void ResetMatches(); // to avoid to delete and recreate the board
-        void Run(int loops=1000); // do the optim : fill the slots the best way possible
+        void Run(int loops); // do the optim : fill the slots the best way possible
         void CalcMaxSlots(); // calc the number of overall slots (all courts for all time slots)
         void FirstPass(); // first random filling of matches (trying to preserve teams not playing 2 consecutive matches)
         void SecondPass(); // second filling with no random (just based on wanabees slots)
