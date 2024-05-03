@@ -2,7 +2,7 @@
 # optimiser of matches for a tournament
 
 CXX=g++
-CXXFLAGS= -g
+CXXFLAGS= -g -O0
 
 # Add .d to Make's recognized suffixes.
 SUFFIXES += .d

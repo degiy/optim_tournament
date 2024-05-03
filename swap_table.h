@@ -13,6 +13,7 @@ class SwapTable
 {
 public:
     SwapTable(Board &b); // build upon the board (optimized version of board based on vectors instead of linked list)
+    SwapTable(SwapTable&); // copy
     void Debug(); // print table
     int ScoreIt(); // score calc
     int BestSwap(int ttl); // recursive simple moves

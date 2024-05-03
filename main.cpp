@@ -29,10 +29,11 @@ static struct argp_option options[] = {
     {"debug", 'd', 0, 0, "Increase debug level"},
     {"verbose", 'v', 0, 0, "Increase verbose level"},
     {"runs", 'r', "NB", 0, "How many random draws of match orders we try to find the best initial score (default = 1000)"},
+    {"recurse", 'R', "NB", 0, "How much recursion on each optimization phase you want on swaping matches (default = 2)"},
+    {"optims", 'O', "NB", 0, "Maximum consecutive optimization phases to try, as long as scoring increases (default = 10)"},
     {"nb-slots", 's', "NB", 0, "How many time slots we envision for the tournament"},
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
     {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
-    {"optim", 'z', 0, 0, "Run the swap optimizer on the tournament with the best initial score"},
     {"break", 'b', "N,X,Y", 0, "Each teams need a lunch break of N consecutive slots, between slot X and slot Y (syntax : N,X,Y). Will need optimizer."},
     {"out", 'o', "FILE", 0, "Output file (tournament result file from optimizer)"},
     {0}};
@@ -40,7 +41,7 @@ static struct argp_option options[] = {
 /* Used by main to communicate with parse_opt. */
 struct arguments
 {
-    int verbose, debug, nb_runs, nb_slots, nb_courts, flag_optim;
+    int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim;
     char *output_file, *input_file, *break_syntax;
 };
 
@@ -61,6 +62,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         case 'r':
             arguments->nb_runs= atoi(arg);
             break;
+        case 'R':
+            arguments->recurse= atoi(arg);
+            break;
         case 's':
             arguments->nb_slots = atoi(arg);
             break;
@@ -68,7 +72,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             arguments->nb_courts = atoi(arg);
             break;
         case 'z':
-            arguments->flag_optim = 1;
+            arguments->max_optim = atoi(arg);
             break;
         case 'o':
             arguments->output_file = arg;
@@ -105,6 +109,8 @@ int main(int argc, char *argv[])
     memset((void *)&arguments, 0, sizeof(arguments));
     // except for a few
     arguments.nb_runs=1000;
+    arguments.recurse=2;
+    arguments.max_optim=10;
 
     /* Parse our arguments; every option seen by parse_opt will be reflected in arguments. */
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
@@ -147,13 +153,20 @@ int main(int argc, char *argv[])
     main_board->Run(arguments.nb_runs);
 
     main_table=new SwapTable(*main_board);
-    if (debug)
+    int best_score=main_table->ScoreIt();
+    printf("Initial score : %d\n",best_score);
+    main_table->Debug();
+    for(int ttl=arguments.max_optim;ttl>0;ttl--)
     {
-        printf("Initial table :\n");
-        main_table->Debug();
+        int score=main_table->BestSwap(arguments.recurse);
+        if (score>best_score)
+        {
+            printf("new best score : %d\n",main_table->ScoreIt());
+            main_table->Debug();
+            best_score=score;
+        }
+        else ttl=0;
     }
-    main_table->BestSwap(1);
-
     // Close the file
     fclose(file);
 

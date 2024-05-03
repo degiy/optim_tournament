@@ -29,6 +29,13 @@ SwapTable::SwapTable(Board &b)
     }
 }
 
+SwapTable::SwapTable(SwapTable &s)
+{
+    nb_matches=s.nb_matches;
+    table=s.table;
+    slots=s.slots;
+}
+
 
 void SwapTable::Debug()
 {
@@ -77,38 +84,78 @@ int SwapTable::ScoreIt()
 // will swap all possible matches, find the best and return
 int SwapTable::BestSwap(int ttl)
 {
-    int bx,by,bxx,byy;
-    int best_score=ScoreIt();
+    int score;
+    int initial_score,best_score;
+    initial_score=best_score=ScoreIt();
+    if (ttl==0) return initial_score;
+    SwapTable best_table(*this);
+    SwapTable backup_table(*this);
+
     for(int y=0;y<slots.size()-1;y++)
     {
         for (int x=0;x<table[y].size();x++)
         {
             // match of concern at table[y][x]
             // is it not void ?
-            if (table[y][x].count()>0)
+            if (table[y][x].any())
             {
                 for(int yy=y+1;yy<slots.size();yy++)
                 {
-                    if ((slots[yy]&table[y][x]).count()==0)
+                    auto m=slots[yy]&table[y][x];
+                    if (m.none())
                     {
                         // possibility on this slot because neither team of selected match are playing
                         // find a possible swap for both sides
                         for (int xx=0;xx<table[yy].size();xx++)
                         {
-                            if ((slots[y]&table[yy][xx]).count()==0)
+                            if ((slots[y]&table[yy][xx]).none())
                             {
                                 // ok we have reciprocity to make the swap
                                 DoSwap(x,y,xx,yy);
-                                int score=ScoreIt();
+                                score=BestSwap(ttl-1);
                                 if (score>best_score)
                                 {
-                                    if (debug>2) printf(" - increase score from %d to %d moving %d,%d and %d,%d\n",best_score,score,x,y,xx,yy);
+                                    if (debug>2) printf("%*c - increase score from %d to %d moving %d,%d and %d,%d (simple)\n",16-ttl,32,best_score,score,x,y,xx,yy);
                                     best_score=score;
-                                    bx=x; by=y; bxx=xx; byy=yy;
+                                    best_table=*this;
                                 }
-                                else if (debug>3) printf("  - decrease score from %d to %d moving %d,%d and %d,%d\n",best_score,score,x,y,xx,yy);
-                                // unswap
-                                DoSwap(x,y,xx,yy);
+                                else if (debug>3) printf("%*c  - decrease score from %d to %d moving %d,%d and %d,%d (simple)\n",16-ttl,32,best_score,score,x,y,xx,yy);
+                                // return to old table
+                                *this=backup_table;
+                            }
+                        }
+                    }
+                    else if (m.count()==1)
+                    {
+                        // the more complex move : one of the team (a) is playing on this time slot but not both
+                        // (maybe both), we need to check is we can switch the match (a,c)
+                        // (but this works only if the other team of the match (c) is not playing on the original time slot from (a,b))
+                        for (int xx=0;xx<table[yy].size();xx++)
+                        {
+                            auto m=table[y][x]&table[yy][xx];
+                            if (m.any())
+                            {
+                                // we have a match with one of our two teams that is playing both matches
+                                m^=table[yy][xx]; // get the other team of the match on slot 2
+                                // check if this particular team happen to play on original slot 1
+                                m&=slots[y];
+                                if (m.none())
+                                {
+                                    // nope : perfect we can make the move
+                                    DoSwap(x,y,xx,yy);
+                                    score=BestSwap(ttl-1);
+                                    if (score>best_score)
+                                    {
+                                        if (debug>2) printf("%*c - increase score from %d to %d moving %d,%d and %d,%d (complex)\n",16-ttl,32,best_score,score,x,y,xx,yy);
+                                        best_score=score;
+                                        best_table=*this;
+                                    }
+                                    else if (debug>3) printf("%*c  - decrease score from %d to %d moving %d,%d and %d,%d (complex)\n",16-ttl,32,best_score,score,x,y,xx,yy);
+                                    // return to old table
+                                    *this=backup_table;
+                                }
+                                // no need to stay on the loop, as we already find the (a,c) match
+                                xx=999;
                             }
                         }
                     }
@@ -116,10 +163,10 @@ int SwapTable::BestSwap(int ttl)
             }
         }
     }
-    if (best_score)
+    if (best_score>initial_score)
     {
-        DoSwap(bx,by,bxx,byy);
-        if(debug>1) printf(" - best score %d moving %d,%d and %d,%d\n",best_score,bx,by,bxx,byy);
+        *this=best_table;
+        if(debug>1) printf("%*c - best score %d\n",16-ttl,32,best_score);
         if(debug>2) Debug();
     }
     return best_score;
