@@ -8,10 +8,16 @@
 #include <ctime>
 #include <iostream>
 
+bool Board::random_set {false};
+
 Board::Board(short nb_slots, short nb_matches) : cells(nb_matches), slots(nb_slots), wanabees(nb_slots+2)
 {
     ResetMatches();
-    srand(std::time(nullptr)); // init randomness
+    if (random_set==false)
+    {
+        srand(std::time(nullptr)); // init randomness
+        random_set=true;
+    }
 }
 
 void Board::SetNbCourts(short nb_courts)
@@ -80,10 +86,10 @@ void Board::Run(int loops)
             score=ScoreIt();
             if (score>best_score)
             {
-                printf("new best score at run %d : %d\n",run,score);
+                if (verbose>1) printf("    new best score at run %d : %d\n",run,score);
                 best_score=score;
                 best_board=*this;
-                if (verbose) best_board.Debug();
+                if (verbose>1) best_board.Debug();
             }
         }
         ResetMatches();

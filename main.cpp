@@ -28,9 +28,10 @@ static char args_doc[] = "<matches_input_file.csv>";
 static struct argp_option options[] = {
     {"debug", 'd', 0, 0, "Increase debug level"},
     {"verbose", 'v', 0, 0, "Increase verbose level"},
-    {"runs", 'r', "NB", 0, "How many random draws of match orders we try to find the best initial score (default = 1000)"},
-    {"recurse", 'R', "NB", 0, "How much recursion on each optimization phase you want on swaping matches (default = 2)"},
-    {"optims", 'O', "NB", 0, "Maximum consecutive optimization phases to try, as long as scoring increases (default = 10)"},
+    {"runs", 'r', "NB", 0, "How many random draws of match orders we try to find the best initial score in phase 1 (default = 1000)"},
+    {"recurse", 'R', "NB", 0, "How much recursion on each optimization phase (aka phase 2) you want on swaping matches (default = 2)"},
+    {"optims", 'z', "NB", 0, "Maximum consecutive optimization phases (or phases 2) to try, as long as scoring increases (default = 2)"},
+    {"overall", 'O', "NB", 0, "Overall number of successive runs of phases 1 and 2 (default = 2)"},
     {"nb-slots", 's', "NB", 0, "How many time slots we envision for the tournament"},
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
     {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
@@ -41,7 +42,7 @@ static struct argp_option options[] = {
 /* Used by main to communicate with parse_opt. */
 struct arguments
 {
-    int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim;
+    int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim,overall;
     char *output_file, *input_file, *break_syntax;
 };
 
@@ -73,6 +74,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             break;
         case 'z':
             arguments->max_optim = atoi(arg);
+            break;
+        case 'O':
+            arguments->overall = atoi(arg);
             break;
         case 'o':
             arguments->output_file = arg;
@@ -110,7 +114,8 @@ int main(int argc, char *argv[])
     // except for a few
     arguments.nb_runs=1000;
     arguments.recurse=2;
-    arguments.max_optim=10;
+    arguments.max_optim=2;
+    arguments.overall=2;
 
     /* Parse our arguments; every option seen by parse_opt will be reflected in arguments. */
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
@@ -150,23 +155,52 @@ int main(int argc, char *argv[])
         main_board->cells[i].b=t2;
         i++;
     }
-    main_board->Run(arguments.nb_runs);
-
-    main_table=new SwapTable(*main_board);
-    int best_score=main_table->ScoreIt();
-    printf("Initial score : %d\n",best_score);
-    main_table->Debug();
-    for(int ttl=arguments.max_optim;ttl>0;ttl--)
+    vector<SwapTable*> oo_table(arguments.overall);
+    int oo_bs=0;
+    int oo_bt=0;
+    for(int oo=0;oo<arguments.overall;oo++)
     {
-        int score=main_table->BestSwap(arguments.recurse);
-        if (score>best_score)
+        printf("- overall run %d\n",oo+1);
+        main_board->Run(arguments.nb_runs);
+
+        main_table=new SwapTable(*main_board);
+        oo_table[oo]=main_table;
+        int score1=main_table->ScoreIt();
+        int best_score=score1;
+        printf("  - Initial score (after phase 1): %d\n",score1);
+        if (debug) main_table->Debug();
+        for(int ttl=arguments.max_optim;ttl>0;ttl--)
         {
-            printf("new best score : %d\n",main_table->ScoreIt());
-            main_table->Debug();
-            best_score=score;
+            int score=main_table->BestSwap(arguments.recurse);
+            if (score>best_score)
+            {
+                printf("  - new best score from a phase 2 : %d\n",main_table->ScoreIt());
+                if (debug) main_table->Debug();
+                best_score=score;
+                if (score>oo_bs)
+                {
+                    oo_bs=score;
+                    oo_bt=oo;
+                    printf("    and best overall score !\n");
+                }
+            }
+            else ttl=0; // no need to continue as we didn't make better than previous score
         }
-        else ttl=0;
+        if (best_score==score1)
+        {
+            // phase 2 didn't bring something new to the table, we stay on phase 1
+            printf("  x phase 2 couldn't make better\n");
+            if (score1>oo_bs)
+            {
+                oo_bs=score1;
+                oo_bt=oo;
+                printf("    but best overall score anyway so for\n");
+            }
+        }
     }
+    // print the best table
+    printf("Best score is %d for board :\n",oo_bs);
+    oo_table[oo_bt]->Debug();
     // Close the file
     fclose(file);
 

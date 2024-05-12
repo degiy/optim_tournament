@@ -41,7 +41,7 @@ void SwapTable::Debug()
 {
     for (int y=0;y<slots.size();y++)
     {
-        printf("- slot %2d : ",y);
+        printf("    - slot %2d : ",y);
         slots[y].Debug();
         printf(" => ");
         for (int x=0;x<table[y].size();x++)

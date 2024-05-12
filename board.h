@@ -37,6 +37,8 @@ class Board
         vector<Slot> wanabees;
         Slot big_list;
         short nb_max_slots;
+
+        static bool random_set;
 };
 
 #endif // BOARD_H_
