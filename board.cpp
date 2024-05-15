@@ -28,34 +28,65 @@ void Board::SetNbCourts(short nb_courts)
     }
 }
 
+void Board::DimSlots(char *file)
+{
+    FILE *fd = fopen(file, "r");
+    int nbc;
+    short i=0;
+
+    // Check if the file opened successfully
+    if (fd == NULL)
+    {
+        printf("Error opening file %s to read matches from.\n",file);
+        throw 1;
+    }
+    // count nb of slots in file
+    while(fscanf(fd,"%d",&nbc)!=EOF) i++;
+    slots.resize(i);
+    wanabees.resize(i+2);
+    ResetMatches();
+    i=0;
+    // Read and print integers from the file until the end
+    fseek(fd,0,SEEK_SET);
+    while (fscanf(fd, "%d", &nbc) != EOF)
+    {
+        slots[i++].capacity=nbc;
+    }
+   fclose(fd);
+}
+
 void Board::ResetMatches()
 {
     // reset linked list
     // of matches and clean slots
     short i;
+    big_list.id=-1;       // not used
+    big_list.capacity=0;  // not used
+    big_list.nb=cells.size();// just for debug
+    big_list.teams.reset();  // no meaning here
     big_list.head.next=0;
-    big_list.nb=cells.size();
     for (i=0;i<cells.size()-1;i++)
     {
         cells[i].next=i+1;
     }
-    cells[cells.size()-1].next=-1;
+    cells[cells.size()-1].next=-1; // so the big list if full with all cells (matches)
 
     i=0;
     for (auto& it: slots)
     {
-        it.nb=0;
-        it.id=i++;
-        it.teams.reset();
-        it.head.next=-1;
+        it.id=i++;          // id shoud not change
+        it.nb=0;            // reset list
+        it.teams.reset();   // no team still plaing
+        it.head.next=-1;    // empty list
     }
     i=0;
     for (auto& it: wanabees)
     {
-        it.nb=0;
         it.id=i++;
-        it.teams.reset();
-        it.head.next=-1;
+        it.capacity=0;      // no meaning for wanabees
+        it.nb=0;            // reset list
+        it.teams.reset();   // no meaning as we could have the same team playing twice
+        it.head.next=-1;    // empty list
     }
 }
 
@@ -77,10 +108,13 @@ void Board::Run(int loops)
     int score;
     while(run++<loops)
     {
-        FirstPass();
-        SecondPass();
-        if(ThirdPass()==false)
+        Pass1A();
+        Pass1B();
+        if(Pass1C()==false)
+        {
             score=0;
+            if (verbose>2) printf("Pass1C failed to place all matches\n");
+        }
         else
         {
             score=ScoreIt();
@@ -112,7 +146,7 @@ void Board::NthCell(short skip,MatchCell **prev,MatchCell **curr)
    *curr=&(cells[(*prev)->next]);
 }
 
-void Board::FirstPass()
+void Board::Pass1A()
 {
     short remain=cells.size();
     // sanity check
@@ -122,24 +156,23 @@ void Board::FirstPass()
         throw 1;
     }
     short sl_nb=0;
-    short score1=0;
     TeamsOnSlot sl_minus1;
+    int skip;
     while(remain>0)
     {
         // let's take a random match and try to place it on a time slot
-        int skip= rand()%remain;
+        skip= rand()%remain;
         MatchCell *pr,*cu;
         NthCell(skip,&pr,&cu);
         short rk=slots[sl_nb].TryInsert2(*pr,*cu,sl_minus1);
         if (rk==0)
         {
-            score1++;
             // no match for any of both team on the present time slot, so we succeed in moving the match to the linked list of current slot
             // check if we finished all the holes of current time slot
             if (slots[sl_nb].nb==slots[sl_nb].capacity)
             {
                 // no more, so jump to next one
-                if (debug>3) printf("score is %hd at slot %hd\n",score1,sl_nb);
+                if (debug>3) printf("  end of slot %hu\n",sl_nb);
                 sl_minus1=slots[sl_nb].teams;
                 sl_nb++;
             }
@@ -150,9 +183,18 @@ void Board::FirstPass()
             wanabees[sl_nb+rk].Insert(*pr,*cu);
         }
         remain--;
+        big_list.nb--; // for debug
+        if (verbose>4)
+        {
+            printf(" pass1A random try %hu (skip %d) on slot %hu :\n",cells.size()-remain,skip,sl_nb);
+            Debug();
+        }
     }
-    if (verbose>3) Debug();
-    if (verbose>2) printf("first pass score : %hd\n",score1);
+    if (verbose>3)
+    {
+        printf("end of pass1A on slot %hu\n",sl_nb) ;
+        Debug();
+    }
 }
 
 MatchCell* Board::EndOfList(MatchCell *head)
@@ -163,10 +205,9 @@ MatchCell* Board::EndOfList(MatchCell *head)
     return head;
 }
 
-void Board::SecondPass()
+void Board::Pass1B()
 {
     // wanabees management
-    short score2 = 0;
     for(short i=1;i<slots.size();i++)
     {
       TeamsOnSlot &sl_minus1=slots[i-1].teams;
@@ -186,11 +227,7 @@ void Board::SecondPass()
         else
         {
             short rk = slots[i].TryInsert2(*pr, *cu, sl_minus1);
-            if (rk == 0)
-            {
-                score2++;
-            }
-            else
+            if (rk != 0)
             {
                 // ok maybe next time (depending on rank)
                 wanabees[i + rk].Insert(*pr, *cu);
@@ -199,15 +236,14 @@ void Board::SecondPass()
         }
       }
       if (debug > 3)
-        Debug();
-      if (debug > 3)
-        printf(" second pass rk %hd score : %hd\n", i,score2);
+      {
+          printf(" pass1B rk %h :\n",i);
+          Debug();
+      }
     }
-    if (verbose > 2)
-        printf("second pass score : %hd\n", score2);
 }
 
-bool Board::ThirdPass()
+bool Board::Pass1C()
 {
     // last wanabees (n+1,n+2) management : they didn't idealy fit, so lets fill the holes
     short is=0;
@@ -245,7 +281,7 @@ bool Board::ThirdPass()
                 if (debug > 3)
                     Debug();
                 if (verbose > 2)
-                    printf("third pass : failed on [%hhu,%hhu]\n",cu->a,cu->b);
+                    printf("pass1C : failed on [%hhu,%hhu]\n",cu->a,cu->b);
                 return false;
             }
         }
@@ -253,7 +289,7 @@ bool Board::ThirdPass()
     if (debug > 3)
         Debug();
     if (verbose > 2)
-        printf("third pass : ok\n");
+        printf("pass1C : ok\n");
     return true;
 }
 
@@ -300,6 +336,7 @@ void Board::Debug()
 {
     printf("Debug Board :\n\n- nb_matches=%ld\n- nb_max_slots=%hd\n- big list :\n",cells.size(),nb_max_slots);
     big_list.PrintSlot();
+    PrintListOfCells(big_list.head);
     printf("\n- slots :\n");
     short cp=0;
     for(auto& it: slots)

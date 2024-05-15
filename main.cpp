@@ -36,6 +36,7 @@ static struct argp_option options[] = {
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
     {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
     {"break", 'b', "N,X,Y", 0, "Each teams need a lunch break of N consecutive slots, between slot X and slot Y (syntax : N,X,Y). Will need optimizer."},
+    {"slots", 'S', "FILE", 0, "Input slot file to load to populate the number of courts per time slot"},
     {"out", 'o', "FILE", 0, "Output file (tournament result file from optimizer)"},
     {0}};
 
@@ -43,7 +44,7 @@ static struct argp_option options[] = {
 struct arguments
 {
     int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim,overall;
-    char *output_file, *input_file, *break_syntax;
+    char *output_file, *input_file, *break_syntax, *slot_file;
 };
 
 /* Parse a single option. */
@@ -86,6 +87,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             break;
         case 't':
             TeamsOnSlot::CapToNbTeams(atoi(arg));
+            break;
+        case 'S':
+            arguments->slot_file=arg;
             break;
         case ARGP_KEY_ARG:
             // arguments
@@ -138,7 +142,6 @@ int main(int argc, char *argv[])
         printf("Error opening file %s to read matches from.\n",arguments.input_file);
         return 1;
     }
-
     // Read and print integers from the file until the end
     while (fscanf(file, "%hhu %hhu", &t1, &t2) != EOF)
     {
@@ -146,7 +149,15 @@ int main(int argc, char *argv[])
     }
     fseek(file,0,SEEK_SET);
     main_board=new Board(nb_slots,nb_matches);
-    main_board->SetNbCourts(nb_courts);
+    // check if a slot file was provided
+    if (arguments.slot_file)
+    {
+       main_board->DimSlots(arguments.slot_file);
+    }
+    else
+    {
+        main_board->SetNbCourts(nb_courts);
+    }
     main_board->CalcMaxSlots();
     short i=0;
     while (fscanf(file, "%hhu %hhu", &t1, &t2) != EOF)
@@ -194,7 +205,7 @@ int main(int argc, char *argv[])
             {
                 oo_bs=score1;
                 oo_bt=oo;
-                printf("    but best overall score anyway so for\n");
+                printf("    but best overall score anyway so far\n");
             }
         }
     }

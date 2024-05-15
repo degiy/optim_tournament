@@ -20,12 +20,13 @@ class Board
     public:
         Board(short nb_slots,short nb_matches);
         void SetNbCourts(short nb_courts); // to set all slots to the same number of availlable courts (capacity)
+        void DimSlots(char *file); // load courts nb for each slot from a file
         void ResetMatches(); // to avoid to delete and recreate the board
         void Run(int loops); // do the optim : fill the slots the best way possible
         void CalcMaxSlots(); // calc the number of overall slots (all courts for all time slots)
-        void FirstPass(); // first random filling of matches (trying to preserve teams not playing 2 consecutive matches)
-        void SecondPass(); // second filling with no random (just based on wanabees slots)
-        bool ThirdPass(); // 3rd path with less ideal scenatio (fill the holes)
+        void Pass1A(); // first random filling of matches (trying to preserve teams not playing 2 consecutive matches)
+        void Pass1B(); // second filling with no random (just based on wanabees slots)
+        bool Pass1C(); // 3rd path with less ideal scenatio (fill the holes)
         int  ScoreIt(); // return score of the board
         void NthCell(short skip,MatchCell **prev,MatchCell **curr); // skip n elements in list from head then return previous and current cell address
         void Debug(); // print board for debug purposes
