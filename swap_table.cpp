@@ -5,28 +5,65 @@
 
 // load the swap table from a previous board
 // here everything down to popcount and bitmaps as we need speed
-SwapTable::SwapTable(Board &b)
+SwapTable::SwapTable(Board &b,char* a_break,char* spare_slots) : break_n{0}, break_x{0}, break_y{0}
 {
-    nb_matches=b.cells.size();
-    table.resize(b.slots.size());
-    slots.resize(b.slots.size());
-    for (short i=0;i<b.slots.size();i++)
+    // manage lunch break if any and a splice to add void slots
+    short splice_x=0;
+    short splice_n=0;
+    short sz=b.slots.size();
+    if (a_break) ParseBreak(a_break);
+    if (spare_slots)
     {
-        table[i].resize(b.slots[i].capacity);
-        slots[i]=b.slots[i].teams;
+        ParseSplice(spare_slots,splice_x,splice_n);
+        sz+=splice_n;
+    }
+    nb_matches=b.cells.size();
+    table.resize(sz);
+    slots.resize(sz);
+    int i,j; // need two indexes as we could add slots in the process
+    for (i=0,j=0;j<sz;i++,j++)
+    {
+        table[j].resize(b.slots[i].capacity);
+        slots[j]=b.slots[i].teams;
         MatchCell* pt=&(b.cells[b.slots[i].head.next]);
         short c;
         for (c=0;c<b.slots[i].nb;c++)
         {
             TeamsOnSlot tos(pt->a,pt->b);
-            table[i][c]=tos;
+            table[j][c]=tos;
             pt=&(b.cells[pt->next]);
         }
         for (;c<b.slots[i].capacity;c++)
         {
-            table[i][c].reset();
+            table[j][c].reset();
+        }
+        if ((splice_n)&&(j==splice_x))
+        {
+            //time to splice
+            while (splice_n-->0)
+            {
+                j++;
+                table[j].resize(b.slots[i].capacity);
+                slots[j].reset();
+                for (c=0;c<b.slots[i].capacity;c++)
+                {
+                    table[j][c].reset();
+                }
+            }
         }
     }
+}
+
+void SwapTable::ParseBreak(char *syntax)
+{
+   sscanf(syntax, "%hu:%hu:%hu", &break_x, &break_y, &break_n);
+   if (debug) printf("need break for %hu slots between %hu and %hu\n",break_n,break_x,break_y);
+}
+
+void SwapTable::ParseSplice(char *syntax, short &x, short &n)
+{
+   sscanf(syntax, "%hu:%hu", &x, &n);
+   if (debug) printf("splice %hu slots after slot %hu\n",n,x);
 }
 
 SwapTable::SwapTable(SwapTable &s)

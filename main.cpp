@@ -36,6 +36,7 @@ static struct argp_option options[] = {
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
     {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
     {"break", 'b', "N,X,Y", 0, "Each teams need a lunch break of N consecutive slots, between slot X and slot Y (syntax : N,X,Y). Will need optimizer."},
+    {"inject-empty-slots", 'i', "N,X", 0, "splice current slots to insert N empty slots at index X by end of phase 1 to ease phase 2 job to void a break for all teams"},
     {"slots", 'S', "FILE", 0, "Input slot file to load to populate the number of courts per time slot"},
     {"out", 'o', "FILE", 0, "Output file (tournament result file from optimizer)"},
     {0}};
@@ -44,7 +45,7 @@ static struct argp_option options[] = {
 struct arguments
 {
     int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim,overall;
-    char *output_file, *input_file, *break_syntax, *slot_file;
+    char *output_file, *input_file, *break_syntax, *slot_file, *injection_syntax;
 };
 
 /* Parse a single option. */
@@ -84,6 +85,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             break;
         case 'b':
             arguments->break_syntax = arg;
+            break;
+        case 'i':
+            arguments->injection_syntax = arg;
             break;
         case 't':
             TeamsOnSlot::CapToNbTeams(atoi(arg));
@@ -174,7 +178,7 @@ int main(int argc, char *argv[])
         printf("- overall run %d\n",oo+1);
         main_board->Run(arguments.nb_runs);
 
-        main_table=new SwapTable(*main_board);
+        main_table=new SwapTable(*main_board,arguments.break_syntax,arguments.injection_syntax);
         oo_table[oo]=main_table;
         int score1=main_table->ScoreIt();
         int best_score=score1;
