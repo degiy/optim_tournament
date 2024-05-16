@@ -198,6 +198,33 @@ int SwapTable::BestSwap(int ttl)
                     }
                 }
             }
+            else
+            {
+                // we have a void cell, that doesn't mean we can't swap it.
+                // in fact we can swap it more easily
+                for(int yy=y+1;yy<slots.size();yy++)
+                {
+                    for (int xx=0;xx<table[yy].size();xx++)
+                    {
+                        // skip to swap both empty cells (no added value to that)
+                        if ( (table[yy][xx].any()) && ((slots[y]&table[yy][xx]).none()) )
+                        {
+                            // ok we can swap because none of the two team was playing in original slot
+                            DoSwap(x,y,xx,yy);
+                            score=BestSwap(ttl-1);
+                            if (score>best_score)
+                            {
+                                if (debug>2) printf("%*c - increase score from %d to %d moving %d,%d and %d,%d (void)\n",16-ttl,32,best_score,score,x,y,xx,yy);
+                                best_score=score;
+                                best_table=*this;
+                            }
+                            else if (debug>3) printf("%*c  - decrease score from %d to %d moving %d,%d and %d,%d (void)\n",16-ttl,32,best_score,score,x,y,xx,yy);
+                            // return to old table
+                            *this=backup_table;
+                        }
+                    }
+                }
+            }
         }
     }
     if (best_score>initial_score)
