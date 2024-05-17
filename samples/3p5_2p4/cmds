@@ -1,0 +1,3 @@
+./gen_poules.sh
+cat m_* > matches.csv
+../../repl_team_name_with_id.pl ./matches.csv ./t.csv ./m.csv

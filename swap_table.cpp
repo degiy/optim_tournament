@@ -21,10 +21,12 @@ SwapTable::SwapTable(Board &b,char* a_break,char* spare_slots) : break_n{0}, bre
     table.resize(sz);
     slots.resize(sz);
     int i,j; // need two indexes as we could add slots in the process
+    mask.reset();
     for (i=0,j=0;j<sz;i++,j++)
     {
         table[j].resize(b.slots[i].capacity);
         slots[j]=b.slots[i].teams;
+        mask|=slots[j];
         MatchCell* pt=&(b.cells[b.slots[i].head.next]);
         short c;
         for (c=0;c<b.slots[i].nb;c++)
@@ -71,6 +73,10 @@ SwapTable::SwapTable(SwapTable &s)
     nb_matches=s.nb_matches;
     table=s.table;
     slots=s.slots;
+    break_n=s.break_n;
+    break_x=s.break_x;
+    break_y=s.break_y;
+    mask=s.mask;
 }
 
 
@@ -86,6 +92,7 @@ void SwapTable::Debug()
             table[y][x].Debug();
             printf(" ");
         }
+        if ((break_n)&&(y>=break_x)&&(y<=break_y)) printf(" <= break");
         printf("\n");
     }
 
@@ -114,7 +121,26 @@ int SwapTable::ScoreIt()
         lastt_tos=last_tos;
         last_tos=cur_tos;
     }
-    return score;
+    // and the bonus if lunch break is respected for teams
+    if (break_n==0) return score;
+    std::bitset<MAX_TEAMS> zero_play;
+    zero_play.reset();
+    for(int i=break_x;i<=break_y-break_n+1;i++)
+    {
+        // we want to check the number of team not playing at all during the [i,i+n] slots
+        std::bitset<MAX_TEAMS> cur_tos=slots[i];
+        for(int j=i+1;j<i+break_n;j++)
+        {
+            cur_tos|=slots[j];
+        }
+        cur_tos.flip(); // to get a 1 for the team who actually didn't play in the N slot
+        zero_play|=cur_tos;
+    }
+    zero_play&=mask;  // and not too much
+    int bonus=zero_play.count()*break_n;
+    if (debug>5) printf("     get a bonus of %d points on a sliding %hu windows on the [%hu,%hu] interval of slots\n",
+                        bonus,break_n,break_x,break_y);
+    return score+bonus;
 }
 
 // main algo of basic swapping matches (only on slots with neither team playing)

@@ -18,13 +18,14 @@ public:
     int ScoreIt(); // score calc
     int BestSwap(int ttl); // recursive simple moves
     void DoSwap(int x, int y,int xx, int yy); // actual swap of matches
-        void ParseBreak(char*);
-        void ParseSplice(char*,short&,short&);
+    void ParseBreak(char*);
+    void ParseSplice(char*,short&,short&);
 
     vector<TeamsOnSlot> slots; // all teams playing on a slot
     vector<vector<TeamsOnSlot>> table; // big table with all slots and courts (can vary between slots)
     short nb_matches;
     short break_x,break_y,break_n; // if a break is to be added in the tournamend (e.g. lunch time)
+    std::bitset<MAX_TEAMS> mask; // all teams playing at once (the mask)
 };
 
 #endif // SWAP_TABLE_H_
