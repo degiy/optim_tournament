@@ -1,0 +1,2 @@
+../../repl_team_name_with_id.pl ./m_u7.csv ./t.csv ./m.csv
+../../optim ./m.csv -c 3 -s 9 -r 500 -R 3 -z 10  -O 10 -t9
