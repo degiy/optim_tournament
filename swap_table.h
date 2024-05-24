@@ -20,12 +20,17 @@ public:
     void DoSwap(int x, int y,int xx, int yy); // actual swap of matches
     void ParseBreak(char*);
     void ParseSplice(char*,short&,short&);
+    void OptimCourts(); // best placement of matches on the several courts of a time slot
+    int ScoreCourts(); // Try to keep teams playing on the same court or not to change to often (e.g. successive matches)
+    void BestCourtSwapOnSlot(int&,int&,int&,int,int);
+    void DoSwapOnSlot(int,int,int);
 
     vector<TeamsOnSlot> slots; // all teams playing on a slot
     vector<vector<TeamsOnSlot>> table; // big table with all slots and courts (can vary between slots)
     short nb_matches;
     short break_x,break_y,break_n; // if a break is to be added in the tournamend (e.g. lunch time)
     std::bitset<MAX_TEAMS> mask; // all teams playing at once (the mask)
+    static int weight[]; // to ponderate the scoring on courts
 };
 
 #endif // SWAP_TABLE_H_

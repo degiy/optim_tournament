@@ -275,3 +275,100 @@ void SwapTable::DoSwap(int x, int y, int xx, int yy)
     slots[y]|=table[y][x];
     slots[yy]|=table[yy][xx];
 }
+
+
+void SwapTable::OptimCourts()
+{
+    int init_score=ScoreCourts();
+    int score=init_score;
+    int bx=-1;
+    int bxx=-1;
+    if (debug) printf("initial court score is %d\n",init_score);
+    for(int y=0;y<slots.size()-1;y++)
+    {
+        BestCourtSwapOnSlot(score,bx,bxx,y,0);
+        if (score>init_score)
+        {
+            DoSwapOnSlot(y,bx,bxx);
+            if (debug>1)
+            {
+                printf("new best score after rank %d : %d\n",y,score);
+                if (debug>2) Debug();
+            }
+            init_score=score;
+        }
+    }
+    if (debug) printf("final court score is %d\n",score);
+}
+
+void SwapTable::BestCourtSwapOnSlot(int &score, int &bx,int &bxx,int rank, int start)
+{
+    int sz=table[rank].size();
+    for (int x=start+1;x<sz;x++)
+    {
+        DoSwapOnSlot(rank,start,x);
+        int sc=ScoreCourts();
+        if (sc>score)
+        {
+            score=sc;
+            bx=start;
+            bxx=x;
+        }
+        DoSwapOnSlot(rank,start,x);
+    }
+    if (start<sz-2) BestCourtSwapOnSlot(score,bx,bxx,rank,start+1);
+}
+
+void SwapTable::DoSwapOnSlot(int rank, int x, int xx)
+{
+    auto b=table[rank][x];
+    table[rank][x]=table[rank][xx];
+    table[rank][xx]=b;
+}
+
+int SwapTable::weight[]{1000,333,250,200,167,143,125,111,100,91,83,77,67,63,59,56,53,50,48,45,43,42,40,38,37,36,35,34,33,32};
+
+int SwapTable::ScoreCourts()
+{
+    int score=0;
+    for(int y=0;y<slots.size()-1;y++)
+    {
+        auto remains=slots[y]; // we are only interested in the teams who play in slot y for this round
+        for (int yy=y+1;yy<slots.size();yy++)
+        {
+            auto doublons=slots[yy]&remains; // all teams playing on both slots y and yy, but not yet eliminated
+            if (doublons.any()) // work to do (checks need to be done on courts)
+            {
+                remains^=doublons;  // as we treated thoses doublons we can drop these teams of our mask of interest (remains)
+                // so now let's working on doublons to check if they happen on same court or not
+                int sz=min(table[y].size(),table[yy].size());
+                int cp=0;
+                for (int x=0;x<sz;x++)
+                {
+                    auto dblx=table[y][x]&table[yy][x]&doublons; // check if we have a same team playing on the same court at y and yy
+                    cp+=dblx.count(); // ponderate the points given for such an unfortunate event (but on the same court)
+                }
+                score+=weight[yy-y-1]*cp;
+                if (remains.none()) yy=slots.size(); // exit if no more teams to look after (all the teams playing in slot y where found with another match at yy or before)
+            }
+        }
+    }
+    return score;
+}
+
+/*
+
+To get a score on the overall placement of teams on courts,
+we locate all consecutive matches of the same team, and check if they change court
+if they play two consecutive matches on the same court it earn much points
+if they play two near consecutive matches on the same court it earn less points
+after that it still earn point but less (as we try to keep teams on same courts as long as possible)
+
+exemple :
+
+slot y+0 : 10011 => remains the same
+slot y+1 : 01001 => doublons is 00001 new remains 10010
+slot y+2 : 10001 => doublons is 10000 new remains 00010
+slot y+3 : 01110 => doublons is 00010 new remains 00000 => end, let's check y+1 and so on
+
+*/

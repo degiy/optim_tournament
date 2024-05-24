@@ -35,6 +35,7 @@ static struct argp_option options[] = {
     {"nb-slots", 's', "NB", 0, "How many time slots we envision for the tournament"},
     {"nb-courts", 'c', "NB", 0, "How many courts/playgrounds we can use for the tournament"},
     {"nb-teams", 't', "NB", 0, "To cap the maximum number of teams, for debug purpose only"},
+    {"tune-courts", 'T', 0, 0, "Tune the placement of each team on each court to limit moves (will try every permutation possible)"},
     {"break", 'b', "N,X,Y", 0, "Each teams need a lunch break of N consecutive slots, between slot X and slot Y (syntax : N,X,Y). Will need optimizer."},
     {"inject-empty-slots", 'i', "N,X", 0, "splice current slots to insert N empty slots at index X by end of phase 1 to ease phase 2 job to void a break for all teams"},
     {"slots", 'S', "FILE", 0, "Input slot file to load to populate the number of courts per time slot"},
@@ -44,7 +45,7 @@ static struct argp_option options[] = {
 /* Used by main to communicate with parse_opt. */
 struct arguments
 {
-    int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim,overall;
+    int verbose, debug, nb_runs, recurse, nb_slots, nb_courts, max_optim,overall,tune_courts;
     char *output_file, *input_file, *break_syntax, *slot_file, *injection_syntax;
 };
 
@@ -61,6 +62,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             break;
         case 'v':
             arguments->verbose++;
+            break;
+        case 'T':
+            arguments->tune_courts++;
             break;
         case 'r':
             arguments->nb_runs= atoi(arg);
@@ -170,6 +174,8 @@ int main(int argc, char *argv[])
         main_board->cells[i].b=t2;
         i++;
     }
+    // Close the file
+    fclose(file);
     vector<SwapTable*> oo_table(arguments.overall);
     int oo_bs=0;
     int oo_bt=0;
@@ -216,8 +222,13 @@ int main(int argc, char *argv[])
     // print the best table
     printf("Best score is %d for board :\n",oo_bs);
     oo_table[oo_bt]->Debug();
-    // Close the file
-    fclose(file);
+    // tune courts ?
+    if (arguments.tune_courts)
+    {
+        oo_table[oo_bt]->OptimCourts();
+        printf("Best court optimisation for teams :\n");
+        oo_table[oo_bt]->Debug();
+    }
 
     return 0;
 }
