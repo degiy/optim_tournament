@@ -280,27 +280,51 @@ void SwapTable::DoSwap(int x, int y, int xx, int yy)
 void SwapTable::OptimCourts()
 {
     int init_score=ScoreCourts();
-    int score=init_score;
-    int bx=-1;
-    int bxx=-1;
+    int bscore=init_score;
+    int score,bx,bxx,y;
+    int run=1;
     if (debug) printf("initial court score is %d\n",init_score);
-    for(int y=0;y<slots.size()-1;y++)
+    // let's scrool down and up while score keeps on increasing
+    do
     {
-        BestCourtSwapOnSlot(score,bx,bxx,y,0);
-        if (score>init_score)
+        init_score=bscore;
+        score=bscore;
+        // first step : a top->down swipe to scramble cells and increase score
+        for(y=0;y<slots.size()-1;y++)
         {
-            DoSwapOnSlot(y,bx,bxx);
-            if (debug>1)
+            BestCourtSwapOnSlot(score,bx,bxx,y,0);
+            if (score>bscore)
             {
-                printf("new best score after rank %d : %d\n",y,score);
-                if (debug>2) Debug();
+                DoSwapOnSlot(y,bx,bxx);
+                if (debug>1)
+                {
+                    printf("top/down swipe iter %d : new best score after rank %d : %d\n",run,y,score);
+                    if (debug>2) Debug();
+                }
+                bscore=score;
             }
-            init_score=score;
         }
+        for(;y>0;y--)
+        {
+            BestCourtSwapOnSlot(score,bx,bxx,y,0);
+            if (score>bscore)
+            {
+                DoSwapOnSlot(y,bx,bxx);
+                if (debug>1)
+                {
+                    printf("down/top swipe iter %d : new best score after rank %d : %d\n",run,y,score);
+                    if (debug>2) Debug();
+                }
+                bscore=score;
+            }
+        }
+        run++;
     }
+    while (bscore>init_score);
     if (debug) printf("final court score is %d\n",score);
 }
 
+// recursive method to follow every swap of teams on a given time slot (rank)
 void SwapTable::BestCourtSwapOnSlot(int &score, int &bx,int &bxx,int rank, int start)
 {
     int sz=table[rank].size();
@@ -326,6 +350,9 @@ void SwapTable::DoSwapOnSlot(int rank, int x, int xx)
     table[rank][xx]=b;
 }
 
+// some decreasing score number when playing two consecutive matches on the same court
+// the goal is to help a team playing two consecutive matches to stay on the same court by all means
+// then find a nice way of keeping teams on same courts, but with less priority
 int SwapTable::weight[]{1000,333,250,200,167,143,125,111,100,91,83,77,67,63,59,56,53,50,48,45,43,42,40,38,37,36,35,34,33,32};
 
 int SwapTable::ScoreCourts()
