@@ -1,7 +1,9 @@
 #include "swap_table.h"
 #include "board.h"
+#include "common.h"
 #include "match_cell.h"
 #include "teams_on_slot.h"
+#include <stdio.h>
 
 // load the swap table from a previous board
 // here everything down to popcount and bitmaps as we need speed
@@ -399,3 +401,39 @@ slot y+2 : 10001 => doublons is 10000 new remains 00010
 slot y+3 : 01110 => doublons is 00010 new remains 00000 => end, let's check y+1 and so on
 
 */
+
+void SwapTable::Save(char *fn)
+{
+    FILE *f=fopen(fn,"w");
+    for (int y=0;y<slots.size();y++)
+    {
+        fprintf(f,"%d;",y);
+        for (int x=0;x<table[y].size();x++)
+        {
+            auto v=table[y][x];
+            if (v.any())
+            {
+                int d;
+                for(d=0;d<MAX_TEAMS;d++)
+                {
+                    if (v.test(d))
+                    {
+                        fprintf(f,"%d-",d);
+                        break;
+                    }
+                }
+                for(d++;d<MAX_TEAMS;d++)
+                {
+                    if (v.test(d))
+                    {
+                        fprintf(f,"%d",d);
+                        break;
+                    }
+                }
+            }
+            fprintf(f,";");
+        }
+        fprintf(f,"\n");
+    }
+    fclose(f);
+}

@@ -230,5 +230,10 @@ int main(int argc, char *argv[])
         oo_table[oo_bt]->Debug();
     }
 
+    if (arguments.output_file)
+    {
+        oo_table[oo_bt]->Save(arguments.output_file);
+    }
+
     return 0;
 }

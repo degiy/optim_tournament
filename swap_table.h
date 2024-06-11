@@ -24,6 +24,7 @@ public:
     int ScoreCourts(); // Try to keep teams playing on the same court or not to change to often (e.g. successive matches)
     void BestCourtSwapOnSlot(int&,int&,int&,int,int);
     void DoSwapOnSlot(int,int,int);
+    void Save(char*); // Save Board
 
     vector<TeamsOnSlot> slots; // all teams playing on a slot
     vector<vector<TeamsOnSlot>> table; // big table with all slots and courts (can vary between slots)
