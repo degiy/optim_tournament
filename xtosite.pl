@@ -22,10 +22,6 @@ while(<>)
     $htcat{$cat}{$pool}=() unless exists $htcat{$cat}{$pool};
     $phase='-' if $phase eq '';
     $htcat{$cat}{$pool}{$phase}=() unless exists $htcat{$cat}{$pool}{$phase};
-    #$htcat{$cat}{$pool}{$phase}{$equ1}=1;
-    #$htcat{$cat}{$pool}{$phase}{$equ2}=1;
-    #$htequ{$cat}{$equ1}=1;
-    #$htequ{$cat}{$equ2}=1;
     $htequp{$cat}{$pool}{$equ1}=1;
     $htequp{$cat}{$pool}{$equ2}=1;
 }
@@ -39,7 +35,7 @@ for my $court (@courts)
 {
     mkdir "./courts/$court";
     open F,">./courts/$court/index.html";
-    &header;
+    &header(3);
     print F "Matches sur Terrain $court<p>\n";
     my $tfil=&filter(1,$court);
     &table($tfil,
@@ -61,7 +57,7 @@ for my $cat (@cats)
 {
     mkdir "./cats/$cat";
     open F,">./cats/$cat/index.html";
-    &header;
+    &header(3);
     print F "Categorie $cat<p><ul>\n";
     @pools=sort keys %{$htcat{$cat}};
     foreach $pool (@pools)
@@ -88,7 +84,7 @@ for my $ecp (@t_cat_pool)
 {
     my ($cat,$pool)=@$ecp;
     open F,">./cats/$cat/$pool/index.html";
-    &header;
+    &header(4);
     print F "Poule $cat $pool<p><p>\n";
     print F "Matchs : <p>\n";
     my $tfil=&filter2(2,3,$cat,$pool);
@@ -100,7 +96,7 @@ for my $ecp (@t_cat_pool)
     print F "<p>Classement : <p>\n";
     my $tss=&sort_scores($tscore);
     &table($tss,
-           'Rang','Equipe','Points','M. Gagnes','M. Perdus','M. Nulls','Pts. marques','Pts. encaisses','Diff. Score',
+           'Rang','Equipe','Points','M. gagnes','M. perdus','M. nuls','Pts. marques','Pts. encaisses','Diff. score',
            0,     1,       2,       3,          4,          5,         6,              7,               8,
            'z',   'team',  'z',     'z',        'z',        'z',       'z',           'z',              'z');
 
@@ -114,7 +110,7 @@ for my $ecpt (@t_cat_pool_team)
 {
     my ($cat,$pool,$team)=@$ecpt;
     open F,">./cats/$cat/$pool/$team.html";
-    &header;
+    &header(4);
     print F "Equipe ",&rewrite_team($team)," ($cat $pool)<p>\n";
     print F "Matchs : <p>\n";
     my $tfil=&filter2(2,3,56,$cat,$pool,$team);
@@ -164,7 +160,7 @@ sub scoring
     # first find all the teams from the table
     my %teams=();
     my ($pt,$t,%hpts,%hwin,%hlost,%hdraw,%hplus,%hminus,%hdiff,@tn);
-    print "scoring :\n";
+    #print "scoring :\n";
     for $pt (@$tfil)
     {
         $teams{$pt->[5]}=1;
@@ -174,7 +170,7 @@ sub scoring
     @tn=sort(keys(%teams));
     for $t (@tn)
     {
-        print "  ",$t,"\n";
+        #print "  ",$t,"\n";
         $hpts{$t}=0;
         $hwin{$t}=0;
         $hlost{$t}=0;
@@ -200,7 +196,7 @@ sub scoring
             # team 1 victorious
             $hwin{$t1}++;
             $hlost{$t2}++;
-            $hpts{$t1}+=3;
+            $hpts{$t1}+=4;
             $hpts{$t2}+=1;
         }
         elsif ($sc1<$sc2)
@@ -208,7 +204,7 @@ sub scoring
             # team 2 victorious
             $hwin{$t2}++;
             $hlost{$t1}++;
-            $hpts{$t2}+=3;
+            $hpts{$t2}+=4;
             $hpts{$t1}+=1;
         }
         else
@@ -302,7 +298,7 @@ sub keepone
 sub table
 {
     my (@ar)=@_;
-    my ($pt,$nb,$i,$cell,$css);
+    my ($pt,$nb,$i,$cell,$css,$cl);
     my $tfil=shift @ar;
     $nb=($#ar+1)/3;
     print F "<table><thead><tr> ";
@@ -316,7 +312,9 @@ sub table
             $cell=$pt->[$ar[$nb+$i]];
             $css=$ar[$nb+$nb+$i];
             if ($css eq 'team') { $cell=&rewrite_team($cell); }
-            print F "<td class=\"$css\">$cell</td> ";
+            $cl="class=\"$css\"";
+            $cl='' if $css eq 'z';
+            print F "<td $cl>$cell</td> ";
         }
         print F "</tr>\n";
     }
@@ -333,23 +331,14 @@ sub rewrite_team
 
 sub header
 {
-    print F "<html><body>\n";
-    print F "  <style>
-    table, th, td {
-      border: 1px solid black;
-      border-collapse: collapse;
-      padding: 8px;
-      text-align: center;
-    }
-.team::first-letter {
-  text-transform: uppercase;
-}
-.slot { font-weight: bold; }
-    </style>\n";
+    my ($depth,$title)=@_;
+    print F "<!DOCTYPE html>\n";
+    my $path = "../" x $depth;
+    print F "<html>\n<head><meta charset=\"UTF-8\"><title>$title</title><link rel=\"stylesheet\" href=\"${path}style.css\"></head>\n<body>\n";
 }
 
 sub footer
 {
-    print F "<i>genere a $gentime</i>\n";
+    print F "<p><i>genere a $gentime</i>\n";
     print F "</body></html>";
 }
