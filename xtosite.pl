@@ -24,7 +24,59 @@ while(<>)
     $htcat{$cat}{$pool}{$phase}=() unless exists $htcat{$cat}{$pool}{$phase};
     $htequp{$cat}{$pool}{$equ1}=1;
     $htequp{$cat}{$pool}{$equ2}=1;
+    my ($club)=$equ1=~/^([^0-9]*)[0-9]??$/;
+    #print "club -$club- -$equ1-\n";
+    $htclub{$club}{"$cat;$pool;$equ1"}=1;
+    ($club)=$equ2=~/^([^0-9]*)[0-9]??$/;
+    #print "club -$club- -$equ2-\n";
+    $htclub{$club}{"$cat;$pool;$equ2"}=1;
 }
+
+# ================ MAIN PAGE =============
+open F,">./index.html";
+&header(0,"Base du site");
+print F "Terrains :<ul>\n";
+@courts=sort keys %htcourt;
+for my $court (@courts)
+{
+    print F "<li><a href=\"courts/$court/index.html\">$court</a></li>\n";
+}
+print F "</ul>\n";
+print F "Categories :<ul>\n";
+@cats=sort keys %htcat;
+for my $cat (@cats)
+{
+    print F "<li><a href=\"cats/$cat/index.html\">$cat</a></li>\n";
+}
+print F "</ul>\n";
+print F "Equipes par club :<ul>\n";
+@clubs=sort keys %htclub;
+for my $club (@clubs)
+{
+    my $club2=ucfirst($club);
+    print F "<li> $club2 :<ul>\n";
+    my $oc='';
+    for my $cpe (sort(keys %{$htclub{$club}}))
+    {
+        my ($c,$p,$e)=split /;/,$cpe;
+        unless ($c eq $oc)
+        {
+            print F "</li>" unless $oc eq '';
+            print F "\n<li><a href=\"cats/$c/index.html\">$c</a> : ";
+        }
+        else
+        {
+            print F ", ";
+        }
+        my $e2=&rewrite_team($e);
+        print F "<a href=\"cats/$c/$p/$e.html\">$e2</a> (<a href=\"cats/$c/$p/index.html\">poule $p</a>)";
+        $oc=$c;
+    }
+    print F "</li></ul></li>\n";
+}
+print F "</ul>\n";
+&footer;
+close F;
 
 # ================ COURTS ================
 @courts=sort keys %htcourt;
@@ -35,13 +87,13 @@ for my $court (@courts)
 {
     mkdir "./courts/$court";
     open F,">./courts/$court/index.html";
-    &header(3);
+    &header(2,"Liste des terrains");
     print F "Matches sur Terrain $court<p>\n";
     my $tfil=&filter(1,$court);
     &table($tfil,
-           'Heure','Equipe 1','Equipe 2','Cat.','Poule','Phase',
-           0,      5,          6,        2,     3,      4,
-           'slot',  'team',   'team',    'z',   'z',    'z');
+           'Heure','Equipe 1',              'Equipe 2',              'Cat.','Poule','Phase',
+           0,      5,                       6,                       2,     3,      4,
+           'slot', 'team#../../cats#2#3',   'team#../../cats#2#3',   'z',   'z',    'z');
     &footer;
     close F;
 }
@@ -57,7 +109,7 @@ for my $cat (@cats)
 {
     mkdir "./cats/$cat";
     open F,">./cats/$cat/index.html";
-    &header(3);
+    &header(2,"$cat");
     print F "Categorie $cat<p><ul>\n";
     @pools=sort keys %{$htcat{$cat}};
     foreach $pool (@pools)
@@ -84,7 +136,7 @@ for my $ecp (@t_cat_pool)
 {
     my ($cat,$pool)=@$ecp;
     open F,">./cats/$cat/$pool/index.html";
-    &header(4);
+    &header(3,"$cat/$pool");
     print F "Poule $cat $pool<p><p>\n";
     print F "Matchs : <p>\n";
     my $tfil=&filter2(2,3,$cat,$pool);
@@ -96,9 +148,9 @@ for my $ecp (@t_cat_pool)
     print F "<p>Classement : <p>\n";
     my $tss=&sort_scores($tscore);
     &table($tss,
-           'Rang','Equipe','Points','M. gagnes','M. perdus','M. nuls','Pts. marques','Pts. encaisses','Diff. score',
-           0,     1,       2,       3,          4,          5,         6,              7,               8,
-           'z',   'team',  'z',     'z',        'z',        'z',       'z',           'z',              'z');
+           'Rang','Equipe','Points','M. joues','M. gagnes','M. perdus','M. nuls','Pts. marques','Pts. encaisses','Diff. pts.',
+           0,     1,       2,       3,          4,          5,         6,        7,             8,               9,
+           'z',   'team/', 'z',     'z',        'z',        'z',       'z',     'z',            'z',             'z');
 
     &footer;
     close F;
@@ -110,8 +162,8 @@ for my $ecpt (@t_cat_pool_team)
 {
     my ($cat,$pool,$team)=@$ecpt;
     open F,">./cats/$cat/$pool/$team.html";
-    &header(4);
-    print F "Equipe ",&rewrite_team($team)," ($cat $pool)<p>\n";
+    &header(3,"$cat/$pool/$team");
+    print F "Equipe ",&rewrite_team($team)," (<a href=\"index.html\">${cat}${pool}</a>)<p>\n";
     print F "Matchs : <p>\n";
     my $tfil=&filter2(2,3,56,$cat,$pool,$team);
     &keepone($tfil,5,6,$team);
@@ -159,7 +211,7 @@ sub scoring
     my ($tfil)=@_;
     # first find all the teams from the table
     my %teams=();
-    my ($pt,$t,%hpts,%hwin,%hlost,%hdraw,%hplus,%hminus,%hdiff,@tn);
+    my ($pt,$t,%hpts,%hwin,%hlost,%hdraw,%hplus,%hminus,%hdiff,@tn,%hplay);
     #print "scoring :\n";
     for $pt (@$tfil)
     {
@@ -178,6 +230,7 @@ sub scoring
         $hplus{$t}=0;
         $hminus{$t}=0;
         $hdiff{$t}=0;
+        $hplay{$t}=0;
     }
     # make the scoring
     for $pt (@$tfil)
@@ -185,6 +238,8 @@ sub scoring
         my ($r,$r,$r,$r,$r,$t1,$t2,$sc1,$sc2)=@$pt;
         next unless $s1 or $sc2;
         # we have a score
+        $hplay{$t1}++;
+        $hplay{$t2}++;
         $hdiff{$t1}+=$sc1-$sc2;
         $hdiff{$t2}+=$sc2-$sc1;
         $hplus{$t1}+=$sc1;
@@ -222,7 +277,7 @@ sub scoring
     @tsc=();
     for $t (@tn)
     {
-        push @tsc,[ 1,$t,$hpts{$t},$hwin{$t},$hlost{$t},$hdraw{$t},$hplus{$t},$hminus{$t},$hdiff{$t} ];
+        push @tsc,[ 1,$t,$hpts{$t},$hplay{$t},$hwin{$t},$hlost{$t},$hdraw{$t},$hplus{$t},$hminus{$t},$hdiff{$t} ];
     }
     #print Dumper(\@tsc);
     return \@tsc;
@@ -311,7 +366,37 @@ sub table
         {
             $cell=$pt->[$ar[$nb+$i]];
             $css=$ar[$nb+$nb+$i];
-            if ($css eq 'team') { $cell=&rewrite_team($cell); }
+            if ($css=~/^team/)
+            {
+                $cell=&rewrite_team($cell);
+                if ($css=~/^team\/(.*)$/)
+                {
+                    my $path=$1;
+                    my $team=$pt->[$ar[$nb+$i]];
+                    $cell="<a href=\"${path}${team}.html\">$cell</a>";
+                }
+                elsif ($css=~/^team#/)
+                {
+                    my @t=split /#/,$css;
+                    shift @t;
+                    my $path='';
+                    for $p (@t)
+                    {
+                        if ($p=~/^[0-9]+$/)
+                        {
+                            $path.=$pt->[$p];
+                            $path.='/';
+                        }
+                        else
+                        {
+                            $path.="$p/";
+                        }
+                    }
+                    my $team=$pt->[$ar[$nb+$i]];
+                    $cell="<a href=\"${path}${team}.html\">$cell</a>";
+                }
+                $css='team';
+            }
             $cl="class=\"$css\"";
             $cl='' if $css eq 'z';
             print F "<td $cl>$cell</td> ";
@@ -335,6 +420,9 @@ sub header
     print F "<!DOCTYPE html>\n";
     my $path = "../" x $depth;
     print F "<html>\n<head><meta charset=\"UTF-8\"><title>$title</title><link rel=\"stylesheet\" href=\"${path}style.css\"></head>\n<body>\n";
+    print F "<table style=\"width: 100%;\"><tr><td style=\"text-align: left;\"><a href=\"javascript:history.back()\">Retour</a></td>\n";
+    print F "<td style=\"text-align: center;\"><a href=\"${path}index.html\">Menu</a></td>\n";
+    print F "<td style=\"text-align: right;\"><a href=\"javascript:history.forward()\">Avance</a></td></tr></table>\n"
 }
 
 sub footer
