@@ -1,0 +1,20 @@
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 8px;
+  text-align: center;
+}
+.team::first-letter {
+  text-transform: uppercase;
+}
+.slot { font-weight: bold; }
+
+html {
+  font-size: 18px;
+}
+
+.selected-team {
+  font-weight: bold;
+  color: #ff0000;
+}
+

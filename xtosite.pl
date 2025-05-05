@@ -88,9 +88,9 @@ for my $court (@courts)
     mkdir "./courts/$court";
     open F,">./courts/$court/index.html";
     &header(2,"Liste des terrains");
-    print F "Matches sur Terrain $court<p>\n";
+    print F "Matches sur Terrain <b>$court</b><p>\n";
     my $tfil=&filter(1,$court);
-    &table($tfil,
+    &table('court',$tfil,
            'Heure','Equipe 1',              'Equipe 2',              'Cat.','Poule','Phase',
            0,      5,                       6,                       2,     3,      4,
            'slot', 'team#../../cats#2#3',   'team#../../cats#2#3',   'z',   'z',    'z');
@@ -110,7 +110,7 @@ for my $cat (@cats)
     mkdir "./cats/$cat";
     open F,">./cats/$cat/index.html";
     &header(2,"$cat");
-    print F "Categorie $cat<p><ul>\n";
+    print F "Categorie <b>$cat</b><p><ul>\n";
     @pools=sort keys %{$htcat{$cat}};
     foreach $pool (@pools)
     {
@@ -137,17 +137,17 @@ for my $ecp (@t_cat_pool)
     my ($cat,$pool)=@$ecp;
     open F,">./cats/$cat/$pool/index.html";
     &header(3,"$cat/$pool");
-    print F "Poule $cat $pool<p><p>\n";
-    print F "Matchs : <p>\n";
+    print F "Poule <b>${cat}${pool}</b><p><p>\n";
+    print F "Matchs (clickables): <p>\n";
     my $tfil=&filter2(2,3,$cat,$pool);
     my $tscore=&scoring($tfil);
-    &table($tfil,
+    &table('score',$tfil,
            'Heure','Equipe 1','Equipe 2','Phase','Terrain',
            0,      5,         6,         4,      1,
            'slot', 'team',    'team',    'z',    'z');
     print F "<p>Classement : <p>\n";
     my $tss=&sort_scores($tscore);
-    &table($tss,
+    &table('sumup',$tss,
            'Rang','Equipe','Points','M. joues','M. gagnes','M. perdus','M. nuls','Pts. marques','Pts. encaisses','Diff. pts.',
            0,     1,       2,       3,          4,          5,         6,        7,             8,               9,
            'z',   'team/', 'z',     'z',        'z',        'z',       'z',     'z',            'z',             'z');
@@ -163,11 +163,11 @@ for my $ecpt (@t_cat_pool_team)
     my ($cat,$pool,$team)=@$ecpt;
     open F,">./cats/$cat/$pool/$team.html";
     &header(3,"$cat/$pool/$team");
-    print F "Equipe ",&rewrite_team($team)," (<a href=\"index.html\">${cat}${pool}</a>)<p>\n";
+    print F "Equipe <b>",&rewrite_team($team),"</b> (<a href=\"index.html\">${cat}${pool}</a>)<p>\n";
     print F "Matchs : <p>\n";
     my $tfil=&filter2(2,3,56,$cat,$pool,$team);
     &keepone($tfil,5,6,$team);
-    &table($tfil,
+    &table('team',$tfil,
            'Heure','Terrain','Contre','Phase',
            0,1,5,4,
            'slot','z','team','z');
@@ -354,14 +354,15 @@ sub table
 {
     my (@ar)=@_;
     my ($pt,$nb,$i,$cell,$css,$cl);
+    my $kind=shift @ar;
     my $tfil=shift @ar;
     $nb=($#ar+1)/3;
-    print F "<table><thead><tr> ";
+    print F "<table class=\"${kind}\"><thead><tr> ";
     for($i=0;$i<$nb;$i++) { print F "<th>",$ar[$i],"</th> "; }
     print F "</tr></thead>\n<tbody>\n";
     for $pt (@$tfil)
     {
-        print F "<tr> ";
+        print F "<tr class=\"alt\"> ";
         for ($i=0;$i<$nb;$i++)
         {
             $cell=$pt->[$ar[$nb+$i]];
@@ -419,7 +420,8 @@ sub header
     my ($depth,$title)=@_;
     print F "<!DOCTYPE html>\n";
     my $path = "../" x $depth;
-    print F "<html>\n<head><meta charset=\"UTF-8\"><title>$title</title><link rel=\"stylesheet\" href=\"${path}style.css\"></head>\n<body>\n";
+    print F "<html>\n<head><meta charset=\"UTF-8\"><title>$title</title><link rel=\"stylesheet\" href=\"${path}style.css\">\n";
+    print F "<script src=\"${path}table_rows.js\"></script></head>\n<body>\n";
     print F "<table style=\"width: 100%;\"><tr><td style=\"text-align: left;\"><a href=\"javascript:history.back()\">Retour</a></td>\n";
     print F "<td style=\"text-align: center;\"><a href=\"${path}index.html\">Menu</a></td>\n";
     print F "<td style=\"text-align: right;\"><a href=\"javascript:history.forward()\">Avance</a></td></tr></table>\n"
