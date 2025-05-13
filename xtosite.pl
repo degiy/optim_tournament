@@ -3,6 +3,8 @@
 # generate site thanks to exchange file (xfile)
 
 use Data::Dumper;
+use POSIX qw(setlocale LC_CTYPE);
+setlocale(LC_CTYPE, 'C');  # Force la locale à "C" (locale ASCII)
 
 # format of exchange file : slot_time; court ; category ; pool ; phase (if any); team 1; team 2; score t1; score t2;
 use POSIX qw(strftime setlocale LC_TIME);
@@ -14,8 +16,12 @@ while(<>)
     chomp;
     next unless /^[0-9:]+;/;
     @t=split /;/,$_;
-    push @tall,[@t];
     ($slot,$court,$cat,$pool,$phase,$equ1,$equ2,$sc1,$sc2)=@t;
+    if ($pool eq 'O') { $pool=chr(1)."Or"; }
+    elsif ($pool eq 'P') { $pool=chr(2)."Argent"; }
+    elsif ($pool eq 'Q') { $pool=chr(3)."Bronze"; }
+    elsif ($pool eq 'R') { $pool=chr(4)."Fer"; }
+    push @tall,[$slot,$court,$cat,$pool,$phase,$equ1,$equ2,$sc1,$sc2];
     $htslot{$slot}=1;
     $htcourt{$court}=1;
     $htcat{$cat}=() unless exists $htcat{$cat};
@@ -33,7 +39,7 @@ while(<>)
 }
 
 # ================ MAIN PAGE =============
-open F,">./index.html";
+open F,"+>./index.html";
 &header(0,"Base du site");
 print F "Terrains :<ul>\n";
 @courts=sort keys %htcourt;
@@ -76,7 +82,7 @@ for my $club (@clubs)
 }
 print F "</ul>\n";
 &footer;
-close F;
+&cleanF;
 
 # ================ COURTS ================
 @courts=sort keys %htcourt;
@@ -86,7 +92,7 @@ mkdir "./courts";
 for my $court (@courts)
 {
     mkdir "./courts/$court";
-    open F,">./courts/$court/index.html";
+    open F,"+>./courts/$court/index.html";
     &header(2,"Liste des terrains");
     print F "Matches sur Terrain <b>$court</b><p>\n";
     my $tfil=&filter(1,$court);
@@ -95,7 +101,7 @@ for my $court (@courts)
            0,      5,                       6,                       2,     3,      4,
            'slot', 'team#../../cats#2#3',   'team#../../cats#2#3',   'z',   'z',    'z');
     &footer;
-    close F;
+    &cleanF;
 }
 
 # all slots
@@ -108,13 +114,14 @@ mkdir "./cats";
 for my $cat (@cats)
 {
     mkdir "./cats/$cat";
-    open F,">./cats/$cat/index.html";
+    open F,"+>./cats/$cat/index.html";
     &header(2,"$cat");
     print F "Categorie <b>$cat</b><p><ul>\n";
     @pools=sort keys %{$htcat{$cat}};
     foreach $pool (@pools)
     {
-        mkdir "./cats/$cat/$pool";
+        my $p2=&cleanP($pool);
+        mkdir "./cats/$cat/$p2";
         print F "<li><a href=\"$pool/index.html\">Poule $pool</a><ul>\n";
         @teams=sort keys %{$htequp{$cat}{$pool}};
         foreach $team (@teams)
@@ -128,14 +135,15 @@ for my $cat (@cats)
     }
     print F "</ul>\n";
     &footer;
-    close F;
+    &cleanF;
 }
 
 # =============== POOLS ===============
 for my $ecp (@t_cat_pool)
 {
     my ($cat,$pool)=@$ecp;
-    open F,">./cats/$cat/$pool/index.html";
+    my $p2=&cleanP($pool);
+    open F,"+>./cats/$cat/$p2/index.html";
     &header(3,"$cat/$pool");
     print F "Poule <b>${cat}${pool}</b><p><p>\n";
     print F "Matchs (clickables): <p>\n";
@@ -153,7 +161,7 @@ for my $ecp (@t_cat_pool)
            'z',   'team/', 'z',     'z',        'z',        'z',       'z',     'z',            'z',             'z');
 
     &footer;
-    close F;
+    &cleanF;
 }
 
 # format of exchange file : slot_time; court ; category ; pool ; phase (if any); team 1; team 2; score t1; score t2;
@@ -161,7 +169,8 @@ for my $ecp (@t_cat_pool)
 for my $ecpt (@t_cat_pool_team)
 {
     my ($cat,$pool,$team)=@$ecpt;
-    open F,">./cats/$cat/$pool/$team.html";
+    my $p2=&cleanP($pool);
+    open F,"+>./cats/$cat/$p2/$team.html";
     &header(3,"$cat/$pool/$team");
     print F "Equipe <b>",&rewrite_team($team),"</b> (<a href=\"index.html\">${cat}${pool}</a>)<p>\n";
     print F "Matchs : <p>\n";
@@ -173,7 +182,7 @@ for my $ecpt (@t_cat_pool_team)
            'slot','z','team','z');
 
     &footer;
-    close F;
+    &cleanF;
 }
 
 # ============== Utilities =========
@@ -431,4 +440,27 @@ sub footer
 {
     print F "<p><i>genere a $gentime</i>\n";
     print F "</body></html>";
+}
+
+
+sub cleanF
+{
+    seek(F, 0, 0);
+    my @lines = <F>;
+    seek(F, 0, 0);
+    truncate(F, 0);
+
+    foreach my $line (@lines) {
+        $line=~tr/[\x01-\x07]//d;  # suppress orders hints
+        print F $line;
+    }
+
+    close(F);
+}
+
+sub cleanP
+{
+    my ($ret)=@_;
+    $ret=~tr/[\x01-\x07]//d;
+    return $ret;
 }
