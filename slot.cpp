@@ -1,4 +1,4 @@
-#include "Slot.h"
+#include "slot.h"
 #include "common.h"
 #include "match_cell.h"
 #include "teams_on_slot.h"
