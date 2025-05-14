@@ -1,9 +1,0 @@
-cp /d/dev/basket/2025_05_17/u7_u9/m_bis.csv m_u7.csv
-../../merge_matches_poule.pl > matches.csv
-../../repl_team_name_with_id.pl matches.csv teams.csv mids.csv
-../../optim ./mids.csv -t8 -T -c 2 -s 8 -r 10000 -R 3 -z 5 -O 4 -o out
-../../repl_id_with_team_name.pl out teams.csv tableau.csv
-sed -i '1 i;bouin1;bouin2;' tableau.csv
-cp /d/dev/basket/2025_05_17/u7_u9/p_u7* .
-/d/dev/basket/gen_feuilles_poules.pl
-../../gen_tableaux24.pl
