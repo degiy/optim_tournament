@@ -430,11 +430,15 @@ sub header
     print F "<!DOCTYPE html>\n";
     my $path = "../" x $depth;
     print F "<html>\n<head><meta charset=\"UTF-8\"><title>$title</title><link rel=\"stylesheet\" href=\"${path}style.css\">\n";
-    print F "<script src=\"${path}table_rows.js\"></script></head>\n<body>\n";
-    print F "<table style=\"width: 100%;\"><tr><td style=\"text-align: left;\"><button onclick=\"javascript:history.back()\">Retour</button></td>\n";
-    print F "<td style=\"text-align: center;\"><button onclick=\"window.location.href=\'${path}index.html\'\">Menu</button></td>\n";
-    print F "<td style=\"text-align: center;\"><button id=\"refreshButton\" onclick=\"checkHeaderAndRefresh()\">mettre a jour</button></td>\n";
-    print F "<td style=\"text-align: right;\"><button onclick=\"javascript:history.forward()\">Avance</button></td></tr></table>\n"
+    print F "<script src=\"${path}table_rows.js\"></script>";
+    print F "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head>\n<body>\n";
+    print F "<div class=\"button-bar\">\n";
+    print F "<button onclick=\"javascript:history.back()\">Retour</button>\n";
+    print F "<button onclick=\"window.location.href=\'${path}index.html\'\">Menu</button>\n";
+    print F "<button id=\"refreshButton\" onclick=\"checkHeaderAndRefresh()\">mettre a jour</button>\n";
+    print F "<button onclick=\"incSize()\">+ gros</button>\n";
+    print F "<button onclick=\"decSize()\">+ petit</button>\n";
+    print F "<button onclick=\"javascript:history.forward()\">Avance</button></div>\n"
 }
 
 sub footer

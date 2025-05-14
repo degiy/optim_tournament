@@ -115,3 +115,30 @@ window.onload = function() {
     localStorage.setItem('lastLoadDate', new Date().toISOString());
 };
 
+const MIN_SIZE = 12; // en px
+const MAX_SIZE = 24;
+const STEP = 2;
+const KEY = "fontSizePx";
+
+function applySize(size) {
+  document.documentElement.style.fontSize = size + "px";
+  localStorage.setItem(KEY, size);
+}
+
+function getCurrentSize() {
+  return parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
+function incSize() {
+  let size = getCurrentSize();
+  if (size + STEP <= MAX_SIZE) applySize(size + STEP);
+}
+
+function decSize() {
+  let size = getCurrentSize();
+  if (size - STEP >= MIN_SIZE) applySize(size - STEP);
+}
+
+// init depuis localStorage
+const saved = parseFloat(localStorage.getItem(KEY));
+if (!isNaN(saved)) applySize(saved);
