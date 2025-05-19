@@ -248,7 +248,7 @@ sub scoring
     for $pt (@$tfil)
     {
         my ($r,$r,$r,$r,$r,$t1,$t2,$sc1,$sc2)=@$pt;
-        next unless $s1 or $sc2;
+        next unless $sc1 or $sc2;
         # we have a score
         $hplay{$t1}++;
         $hplay{$t2}++;
