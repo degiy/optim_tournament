@@ -28,14 +28,20 @@ while(<>)
     $htcat{$cat}{$pool}=() unless exists $htcat{$cat}{$pool};
     $phase='-' if $phase eq '';
     $htcat{$cat}{$pool}{$phase}=() unless exists $htcat{$cat}{$pool}{$phase};
-    $htequp{$cat}{$pool}{$equ1}=1;
-    $htequp{$cat}{$pool}{$equ2}=1;
-    my ($club)=$equ1=~/^([^0-9]*)[0-9]??$/;
-    #print "club -$club- -$equ1-\n";
-    $htclub{$club}{"$cat;$pool;$equ1"}=1;
-    ($club)=$equ2=~/^([^0-9]*)[0-9]??$/;
-    #print "club -$club- -$equ2-\n";
-    $htclub{$club}{"$cat;$pool;$equ2"}=1;
+    unless ($equ1 eq '')
+    {
+        $htequp{$cat}{$pool}{$equ1}=1;
+        my ($club)=$equ1=~/^([^0-9]*)[0-9]??$/;
+        #print "club -$club- -$equ1-\n";
+        $htclub{$club}{"$cat;$pool;$equ1"}=1;
+    }
+    unless ($equ2 eq '')
+    {
+        $htequp{$cat}{$pool}{$equ2}=1;
+        my ($club)=$equ2=~/^([^0-9]*)[0-9]??$/;
+        #print "club -$club- -$equ2-\n";
+        $htclub{$club}{"$cat;$pool;$equ2"}=1;
+    }
 }
 
 # ================ MAIN PAGE =============
@@ -248,7 +254,7 @@ sub scoring
     for $pt (@$tfil)
     {
         my ($r,$r,$r,$r,$r,$t1,$t2,$sc1,$sc2)=@$pt;
-        next unless $s1 or $sc2;
+        next unless $sc1 or $sc2;
         # we have a score
         $hplay{$t1}++;
         $hplay{$t2}++;
@@ -372,9 +378,9 @@ sub table
     print F "<table class=\"${kind}\"><thead><tr> ";
     for($i=0;$i<$nb;$i++) { print F "<th>",$ar[$i],"</th> "; }
     print F "</tr></thead>\n<tbody>\n";
-    for $pt (@$tfil)
+    LIGNE: for $pt (@$tfil)
     {
-        print F "<tr class=\"alt\"> ";
+        my $ltp="<tr class=\"alt\"> ";
         for ($i=0;$i<$nb;$i++)
         {
             $cell=$pt->[$ar[$nb+$i]];
@@ -384,6 +390,7 @@ sub table
                 $cell=&rewrite_team($cell);
                 if ($css=~/^team\/(.*)$/)
                 {
+                    next LIGNE if $cell eq ''; # pour ne pas afficher une ligne vide pour les scores quand on a des entrees vides
                     my $path=$1;
                     my $team=$pt->[$ar[$nb+$i]];
                     $cell="<a href=\"${path}${team}.html\">$cell</a>";
@@ -412,9 +419,9 @@ sub table
             }
             $cl="class=\"$css\"";
             $cl='' if $css eq 'z';
-            print F "<td $cl>$cell</td> ";
+            $ltp.="<td $cl>$cell</td> ";
         }
-        print F "</tr>\n";
+        print F $ltp,"</tr>\n";
     }
     print F "</tbody></table>\n";
 }

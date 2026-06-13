@@ -14,6 +14,7 @@ use integer;
 # slot_time ...
 
 $l=<>;
+$l=~s/\r//g;
 chomp $l;
 @court_names=split /;/,$l;
 shift @court_names;
@@ -21,6 +22,7 @@ shift @court_names;
 $i=0;
 while(<>)
 {
+    s/\r//g;
     chomp $_;
     $i3=$i%3;
     if ($i3==0)
@@ -44,23 +46,42 @@ while(<>)
         for($x=0;$x<=$#t1;$x++)
         {
             $cell=$t1[$x];
-            next unless $cell=~/ - .*\(.*\)/;
-            #print $court_names[$i]," $cell\n";
-            ($t1,$t2,$p)=$cell=~/^(.*) - (.*) \((.*)\)$/;
-            if ($p=~/\//)
+            if ($cell=~/ - .*\(.*\)/)
             {
-                # phase
-                ($cat,$pool,$phase)=$p=~/^(....)(.*)\/(.*)$/;
+                #print $court_names[$i]," $cell\n";
+                ($t1,$t2,$p)=$cell=~/^ *([^ ]*) *- *([^ ]*) *\((.*)\)$/;
+                if ($p=~/\//)
+                {
+                    # phase
+                    ($cat,$pool,$phase)=$p=~/^(....)(.*)\/(.*)$/;
+                }
+                else
+                {
+                    ($cat,$pool)=$p=~/^(.*i?)(.)$/;
+                    $phase='';
+                }
+                $sc1=$t2[$x];
+                $sc2=$t3[$x];
+                $court=$court_names[$x];
+                print "$slot;$court;$cat;$pool;$phase;$t1;$t2;$sc1;$sc2;\n"
             }
-            else
+            elsif ($cell=~/.*\(.*\)/)
             {
-                ($cat,$pool)=$p=~/^(.*i?)(.)$/;
-                $phase='';
+                # ok match planifie mais pas affecte
+                ($p)=$cell=~/^.*\((.*)\)$/;
+                if ($p=~/\//)
+                {
+                    # phase
+                    ($cat,$pool,$phase)=$p=~/^(....)(.*)\/(.*)$/;
+                }
+                else
+                {
+                    ($cat,$pool)=$p=~/^(.*i?)(.)$/;
+                    $phase='';
+                }
+                $court=$court_names[$x];
+                print "$slot;$court;$cat;$pool;$phase;;;;;\n"
             }
-            $sc1=$t2[$x];
-            $sc2=$t3[$x];
-            $court=$court_names[$x];
-            print "$slot;$court;$cat;$pool;$phase;$t1;$t2;$sc1;$sc2;\n"
         }
     }
     $i++
