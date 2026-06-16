@@ -87,8 +87,8 @@ for my $club (@clubs)
     print F "</li></ul></li>\n";
 }
 print F "</ul>\n";
-print F "<p><a href=\"https://matin.tournoi-jsc-basket.fun\"> lien tournoi matin</a> et <a href=\"qr-code-matin-petit.png\">QR code</a>\n";
-print F "<p><a href=\"https://aprem.tournoi-jsc-basket.fun\"> lien tournoi aprem</a> et <a href=\"qr-code-aprem-petit.png\">QR code</a>\n";
+print F "<p><a href=\"https://matin.jsc2026.site\"> lien tournoi matin</a> et <a href=\"qr-code-matin-petit.png\">QR code</a>\n";
+print F "<p><a href=\"https://aprem.jsc2026.site\"> lien tournoi aprem</a> et <a href=\"qr-code-aprem-petit.png\">QR code</a>\n";
 print F "<p><a href=\"reglement.html\">Reglement et phases finales</a>\n";
 &footer;
 &cleanF;
